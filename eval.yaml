@@ -1,0 +1,78 @@
+description: "TDS Data Analyst Agent – generic eval (20-point rubric)"
+
+providers:
+  - id: https
+    config:
+      url: https://data-analyst-agent-2fq5.onrender.com/api/
+      method: POST
+      headers:
+        Content-Type: multipart/form-data
+      body: "{}"  # Required dummy body
+      files:
+        questions.txt: exact_test.txt
+      transformResponse: json
+
+assert:
+  - type: is-json
+    value: {type: array, minItems: 4, maxItems: 4}
+    weight: 0
+
+  - type: python
+    weight: 4
+    value: |
+      import json
+      print(json.loads(output)[0] == 1)
+
+  - type: python
+    weight: 4
+    value: |
+      import json, re
+      print(bool(re.search(r'titanic', json.loads(output)[1], re.I)))
+
+  - type: python
+    weight: 4
+    value: |
+      import json, math
+      print(abs(float(json.loads(output)[2]) - 0.485782) <= 0.001)
+
+  - type: llm-rubric
+    provider: openai:gpt-4.1-nano
+    weight: 8
+    preprocess: |
+      import json
+      data = json.loads(output)
+      context['plot'] = data[3]
+    rubricPrompt: |
+      [
+        { "role": "system",
+          "content": "Grade the scatterplot. Award *score 1* only iff ALL are true: \
+          (a) it’s a scatterplot of Rank (x-axis) vs Peak (y-axis); \
+          (b) a dotted **red** regression line is present; \
+          (c) axes are visible & labelled; \
+          (d) file size < 100 kB. Otherwise score 0. \
+          Respond as JSON: {scatterplot:bool, regression:bool, axes:bool, size:bool, score:number}"
+        },
+        { "role": "user",
+          "content": [
+            { "type": "image_url",
+              "image_url": { "url": "{{plot}}" }
+            },
+            { "type": "text",
+              "text": "Here is the original task:\n\n{{vars.question}}\n\nReview the image and JSON above." }
+          ]
+        }
+      ]
+    threshold: 0.99
+
+tests:
+  - description: "Wikipedia film revenue analysis test"
+    vars:
+      question: |
+        Scrape the list of highest grossing films from Wikipedia. It is at the URL:
+        https://en.wikipedia.org/wiki/List_of_highest-grossing_films
+        Answer the following questions and respond with a JSON array of strings containing the answer.
+        1. How many $2 bn movies were released before 2000?
+        2. Which is the earliest film that grossed over $1.5 bn?
+        3. What's the correlation between the Rank and Peak?
+        4. Draw a scatterplot of Rank and Peak along with a dotted red regression line through it.
+           Return as a base-64 encoded data URI, `"data:image/png;base64,..."`

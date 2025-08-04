@@ -417,6 +417,10 @@ agent = DataAnalystAgent()
 def analyze_data():
     """Main API endpoint"""
     try:
+        print("==> Received request")
+        print("Content-Type:", request.content_type)
+        print("request.files keys:", list(request.files.keys()))
+        print("request.form keys:", list(request.form.keys()))
         # Check if questions.txt is in the request
         if 'questions.txt' not in request.files:
             return jsonify({"error": "questions.txt is required"}), 400
