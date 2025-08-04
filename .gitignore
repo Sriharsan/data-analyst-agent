@@ -1,0 +1,19 @@
+# Ignore Python virtual environment
+venv/
+
+# Ignore Python cache
+__pycache__/
+*.py[cod]
+
+# Ignore Jupyter notebook checkpoints (if any)
+.ipynb_checkpoints/
+
+# Ignore OS files
+.DS_Store
+
+# Ignore logs
+*.log
+
+# Ignore environment and secrets
+.env
+*.env
