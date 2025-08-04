@@ -7,7 +7,7 @@ providers:
       method: POST
       headers:
         Content-Type: multipart/form-data
-      body: "{}"  # Required dummy body
+      form:
       files:
         questions.txt: exact_test.txt
       transformResponse: json
