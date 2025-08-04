@@ -2,13 +2,12 @@ services:
   - type: web
     name: data-analyst-agent
     env: python
-    region: oregon
-    plan: free
-    buildCommand: pip install --upgrade pip setuptools wheel && pip install -r requirements.txt
-    startCommand: gunicorn --bind 0.0.0.0:$PORT --timeout 300 --workers 1 --worker-class sync app:app
+    pythonVersion: "3.10.13"
+    buildCommand: |
+      python --version
+      python -m pip install --upgrade pip setuptools wheel
+      pip install -r requirements.txt
+    startCommand: gunicorn --bind 0.0.0.0:$PORT --timeout 300 --workers 1 app:app
     envVars:
-      - key: PYTHON_VERSION
-        value: 3.10.13
-      - key: PIP_NO_CACHE_DIR
-        value: 1
-    healthCheckPath: /health
+      - key: PYTHONUNBUFFERED
+        value: "1"
