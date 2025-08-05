@@ -448,12 +448,21 @@ agent = DataAnalystAgent()
 
 @app.route('/api/', methods=['POST'])
 def analyze_data():
-    """Main API endpoint"""
+    """Main API endpoint - DEBUG VERSION"""
     try:
-        print("==> Received request")
-        print("Content-Type:", request.content_type)
-        print("request.files keys:", list(request.files.keys()))
-        print("request.form keys:", list(request.form.keys()))
+        print("="*50)
+        print("==> DEBUG: Received request")
+        print(f"==> Content-Type: {request.content_type}")
+        print(f"==> Method: {request.method}")
+        print(f"==> Headers: {dict(request.headers)}")
+        print(f"==> request.files keys: {list(request.files.keys())}")
+        print(f"==> request.form keys: {list(request.form.keys())}")
+        print(f"==> request.args keys: {list(request.args.keys())}")
+        print(f"==> request.json: {request.json if request.is_json else 'Not JSON'}")
+        print(f"==> request.data length: {len(request.data) if request.data else 0}")
+        if request.data:
+            print(f"==> request.data preview: {request.data[:200]}")
+        print("="*50)
         
         questions = None
         
@@ -461,28 +470,50 @@ def analyze_data():
         if 'questions.txt' in request.files:
             questions_file = request.files['questions.txt']
             questions = questions_file.read().decode('utf-8')
-            print("==> Got questions from multipart file")
+            print("==> DEBUG: Got questions from multipart file")
         
         # Handle raw body content (promptfoo format with body: file://)
         elif request.data:
             try:
                 questions = request.data.decode('utf-8')
-                print("==> Got questions from raw body")
+                print("==> DEBUG: Got questions from raw body")
             except Exception as e:
-                print(f"==> Failed to decode raw body: {e}")
+                print(f"==> DEBUG: Failed to decode raw body: {e}")
                 questions = None
         
         # Handle form data in body
         elif request.form and len(request.form) > 0:
             # Sometimes the content comes as form data
             questions = list(request.form.keys())[0] if request.form else None
-            print("==> Got questions from form data")
+            print("==> DEBUG: Got questions from form data")
+        
+        # Handle JSON body
+        elif request.is_json:
+            json_data = request.get_json()
+            if isinstance(json_data, dict) and 'questions' in json_data:
+                questions = json_data['questions']
+            elif isinstance(json_data, str):
+                questions = json_data
+            print(f"==> DEBUG: Got questions from JSON: {type(json_data)}")
         
         if not questions or len(questions.strip()) == 0:
-            print("==> No valid questions found")
-            return jsonify({"error": "No questions found in request"}), 400
+            print("==> DEBUG: No valid questions found")
+            # Return debug info to see what promptfoo actually sent
+            debug_info = {
+                "error": "No questions found in request",
+                "debug": {
+                    "content_type": request.content_type,
+                    "files": list(request.files.keys()),
+                    "form": dict(request.form),
+                    "args": dict(request.args),
+                    "is_json": request.is_json,
+                    "data_length": len(request.data) if request.data else 0,
+                    "data_preview": request.data[:100].decode('utf-8', errors='ignore') if request.data else None
+                }
+            }
+            return jsonify(debug_info), 400
         
-        print(f"==> Questions received: {questions[:100]}...")
+        print(f"==> DEBUG: Questions received: {questions[:100]}...")
         
         # Handle additional files (for multipart requests)
         files = {}
@@ -508,11 +539,12 @@ def analyze_data():
             except:
                 pass
         
-        print(f"==> Returning result: {str(result)[:200]}...")
+        print(f"==> DEBUG: Returning result type: {type(result)}")
+        print(f"==> DEBUG: Result preview: {str(result)[:200]}...")
         return jsonify(result)
         
     except Exception as e:
-        print(f"==> Error: {str(e)}")
+        print(f"==> DEBUG ERROR: {str(e)}")
         import traceback
         traceback.print_exc()
         return jsonify({"error": f"Request processing failed: {str(e)}"}), 500
