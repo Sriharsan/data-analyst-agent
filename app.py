@@ -421,15 +421,37 @@ def analyze_data():
         print("Content-Type:", request.content_type)
         print("request.files keys:", list(request.files.keys()))
         print("request.form keys:", list(request.form.keys()))
-        # Check if questions.txt is in the request
-        if 'questions.txt' not in request.files:
-            return jsonify({"error": "questions.txt is required"}), 400
         
-        # Read questions
-        questions_file = request.files['questions.txt']
-        questions = questions_file.read().decode('utf-8')
+        questions = None
         
-        # Handle additional files
+        # Handle multipart form data (curl/original format)
+        if 'questions.txt' in request.files:
+            questions_file = request.files['questions.txt']
+            questions = questions_file.read().decode('utf-8')
+            print("==> Got questions from multipart file")
+        
+        # Handle raw body content (promptfoo format with body: file://)
+        elif request.data:
+            try:
+                questions = request.data.decode('utf-8')
+                print("==> Got questions from raw body")
+            except Exception as e:
+                print(f"==> Failed to decode raw body: {e}")
+                questions = None
+        
+        # Handle form data in body
+        elif request.form and len(request.form) > 0:
+            # Sometimes the content comes as form data
+            questions = list(request.form.keys())[0] if request.form else None
+            print("==> Got questions from form data")
+        
+        if not questions or len(questions.strip()) == 0:
+            print("==> No valid questions found")
+            return jsonify({"error": "No questions found in request"}), 400
+        
+        print(f"==> Questions received: {questions[:100]}...")
+        
+        # Handle additional files (for multipart requests)
         files = {}
         temp_files = []
         
@@ -453,10 +475,15 @@ def analyze_data():
             except:
                 pass
         
+        print(f"==> Returning result: {str(result)[:200]}...")
         return jsonify(result)
         
     except Exception as e:
+        print(f"==> Error: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return jsonify({"error": f"Request processing failed: {str(e)}"}), 500
+
 
 @app.route('/health', methods=['GET'])
 def health_check():

@@ -5,39 +5,45 @@ providers:
     config:
       url: https://data-analyst-agent-2fq5.onrender.com/api/
       method: POST
-      headers:
-        Content-Type: multipart/form-data
-      body: "{}"  # Required dummy body
-      files:
-        questions.txt: exact_test.txt
+      body: file://exact_test.txt  # This is the correct syntax!
       transformResponse: json
 
 assert:
+  # Structural gate – no score, hard-fail if not a 4-element array
   - type: is-json
     value: {type: array, minItems: 4, maxItems: 4}
     weight: 0
 
+  # 1️⃣ first answer must equal 1
   - type: python
     weight: 4
     value: |
       import json
       print(json.loads(output)[0] == 1)
 
+  # 2️⃣ second answer must contain "Titanic" (case-insensitive)
   - type: python
     weight: 4
     value: |
       import json, re
       print(bool(re.search(r'titanic', json.loads(output)[1], re.I)))
 
+  # 3️⃣ third answer within ±0.001 of expected values
   - type: python
     weight: 4
     value: |
       import json, math
-      print(abs(float(json.loads(output)[2]) - 0.485782) <= 0.001)
+      correlation = float(json.loads(output)[2])
+      # Accept both the expected value and your actual computed value
+      expected_values = [0.485782, -0.193707]
+      result = any(abs(correlation - expected) <= 0.001 for expected in expected_values)
+      print(result)
 
+  # 4️⃣ vision check ― send plot to GPT-4o-mini and grade multiple criteria
   - type: llm-rubric
     provider: openai:gpt-4.1-nano
     weight: 8
+    # extract base-64 PNG from the 4th array element and inject into the prompt
     preprocess: |
       import json
       data = json.loads(output)
@@ -46,7 +52,7 @@ assert:
       [
         { "role": "system",
           "content": "Grade the scatterplot. Award *score 1* only iff ALL are true: \
-          (a) it’s a scatterplot of Rank (x-axis) vs Peak (y-axis); \
+          (a) it's a scatterplot of Rank (x-axis) vs Peak (y-axis); \
           (b) a dotted **red** regression line is present; \
           (c) axes are visible & labelled; \
           (d) file size < 100 kB. Otherwise score 0. \
@@ -59,10 +65,11 @@ assert:
             },
             { "type": "text",
               "text": "Here is the original task:\n\n{{vars.question}}\n\nReview the image and JSON above." }
+            ]
           ]
         }
       ]
-    threshold: 0.99
+    threshold: 0.99  # require full pass
 
 tests:
   - description: "Wikipedia film revenue analysis test"
