@@ -156,7 +156,7 @@ class DataAnalystAgent:
                     year = int(year_match.group(1)) if year_match else None
                     
                     # Clean film name
-                    film_name = re.sub(r'\s*\(\d{4}\).*
+                    film_name = re.sub(r'\s*\(\d{4}\).*', '', film_text).strip()
     
             print(f"==> Successfully parsed {len(data)} films from Wikipedia")
         
