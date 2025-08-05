@@ -65,7 +65,7 @@ class DataAnalystAgent:
                 return self.handle_csv_analysis(questions, files)
         
             else:
-            print("==> Falling back to general task handler")
+                print("==> Falling back to general task handler")
                 # For unknown tasks, try Wikipedia first since that's most common
                 if 'json array' in questions_lower or 'scatterplot' in questions_lower:
                     print("==> Attempting Wikipedia scraping as fallback")
