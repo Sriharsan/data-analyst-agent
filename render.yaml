@@ -1,13 +1,30 @@
 services:
   - type: web
-    name: data-analyst-agent
+    name: lightweight-data-analyst
     env: python
-    pythonVersion: "3.10.13"
+    pythonVersion: "3.10.13"  # Stable version, avoid 3.11+ which causes setuptools issues
     buildCommand: |
+      echo "==> Starting optimized build for Render free tier"
       python --version
-      python -m pip install --upgrade pip setuptools wheel
-      pip install -r requirements.txt
-    startCommand: gunicorn --bind 0.0.0.0:$PORT --timeout 300 --workers 1 app:app
+      python -m pip install --upgrade pip==23.3.1 setuptools==69.0.0 wheel==0.42.0
+      echo "==> Installing lightweight dependencies"
+      pip install -r requirements.txt --no-cache-dir
+      echo "==> Build completed successfully"
+    startCommand: |
+      echo "==> Starting lightweight gunicorn server"
+      gunicorn --bind 0.0.0.0:$PORT --timeout 120 --workers 1 --threads 2 --worker-class sync --max-requests 100 --max-requests-jitter 10 app:app
     envVars:
       - key: PYTHONUNBUFFERED
         value: "1"
+      - key: PYTHONDONTWRITEBYTECODE
+        value: "1"
+      - key: PYTHONHASHSEED
+        value: "random"
+      - key: WEB_CONCURRENCY
+        value: "1"
+      - key: WORKER_CLASS
+        value: "sync"
+    # Free tier optimizations
+    plan: starter  # Use starter plan (free tier)
+    region: oregon # Closest to your location for better performance
+    healthCheckPath: /health
