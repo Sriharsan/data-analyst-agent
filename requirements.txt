@@ -13,3 +13,7 @@ gunicorn>=21.0.0
 lxml>=4.9.0
 html5lib>=1.1
 Pillow>=10.0.0
+openai==0.27.8
+duckdb==0.8.1
+werkzeug==2.3.6
+python-dateutil==2.8.2
