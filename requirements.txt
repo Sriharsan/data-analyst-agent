@@ -1,33 +1,29 @@
-# Optimized requirements.txt for Render Free Tier
-# Total memory footprint: ~200MB vs 500MB+ in original
+# FIXED requirements.txt for Python 3.13 compatibility
+# Using pre-built wheels only to avoid build issues
 
-# Core web framework (lightweight)
 Flask==2.3.3
 gunicorn==21.2.0
 Werkzeug==2.3.6
 
-# Essential data processing (minimal versions)
-pandas==2.0.3
-numpy==1.24.4
+# Use pre-built wheels for these
+pandas==2.1.4
+numpy==1.25.2
 
-# Lightweight plotting (instead of matplotlib + seaborn)
+# Lightweight plotting (pre-built wheels available)
 plotly==5.17.0
 
-# Web scraping (minimal)
+# Web scraping
 requests==2.31.0
 beautifulsoup4==4.12.3
 lxml==4.9.4
 
-# AI integration (lightweight)
-openai==0.27.8
+# AI integration
+openai==1.3.0
 
 # Utilities
 python-dateutil==2.8.2
-Pillow==10.0.1
+Pillow==10.1.0
 
-# REMOVED HEAVY DEPENDENCIES:
-# matplotlib==3.7.5  # 50MB+ -> Replaced with Plotly
-# seaborn==0.12.2    # Heavy dependency
-# scikit-learn==1.3.2 # 100MB+ -> Use numpy for basic stats
-# scipy==1.11.4     # 80MB+ -> Use numpy alternatives
-# html5lib==1.1     # Not essential
+# Additional compatibility
+setuptools>=65.0.0
+wheel>=0.38.0

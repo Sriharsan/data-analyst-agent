@@ -2,29 +2,28 @@ services:
   - type: web
     name: lightweight-data-analyst
     env: python
-    pythonVersion: "3.10.13"  # Stable version, avoid 3.11+ which causes setuptools issues
+    pythonVersion: "3.10.14"  # FORCE older Python version
     buildCommand: |
-      echo "==> Starting optimized build for Render free tier"
+      echo "==> Python version check"
       python --version
-      python -m pip install --upgrade pip==23.3.1 setuptools==69.0.0 wheel==0.42.0
-      echo "==> Installing lightweight dependencies"
-      pip install -r requirements.txt --no-cache-dir
+      python -c "import sys; print(f'Python: {sys.version}')"
+      echo "==> Upgrading build tools FIRST"
+      python -m pip install --upgrade pip==23.3.2
+      python -m pip install --upgrade setuptools==69.0.3 wheel==0.42.0
+      echo "==> Installing dependencies with pre-built wheels only"
+      pip install --only-binary=all --no-compile -r requirements.txt
+      echo "==> Verifying installation"
+      python -c "import flask; print('Flask OK')"
+      python -c "import pandas; print('Pandas OK')" 
+      python -c "import plotly; print('Plotly OK')"
       echo "==> Build completed successfully"
-    startCommand: |
-      echo "==> Starting lightweight gunicorn server"
-      gunicorn --bind 0.0.0.0:$PORT --timeout 120 --workers 1 --threads 2 --worker-class sync --max-requests 100 --max-requests-jitter 10 app:app
+    startCommand: gunicorn --bind 0.0.0.0:$PORT --timeout 120 --workers 1 --threads 2 app:app
     envVars:
       - key: PYTHONUNBUFFERED
         value: "1"
-      - key: PYTHONDONTWRITEBYTECODE
+      - key: PYTHONDONTWRITEBYTECODE  
         value: "1"
-      - key: PYTHONHASHSEED
-        value: "random"
-      - key: WEB_CONCURRENCY
+      - key: PIP_NO_CACHE_DIR
         value: "1"
-      - key: WORKER_CLASS
-        value: "sync"
-    # Free tier optimizations
-    plan: starter  # Use starter plan (free tier)
-    region: oregon # Closest to your location for better performance
-    healthCheckPath: /health
+      - key: PIP_DISABLE_PIP_VERSION_CHECK
+        value: "1"
